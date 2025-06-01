@@ -9,7 +9,7 @@ class TotalDataset(torch.utils.data.Dataset):
     def __init__(self,
                  data_split='train',
                  data_root='/data',
-                 subset_name=['SLR500', 'MS_ASL', 'WLASL', 'NMFs_CSL'],
+                 subset_name=['WLASL'],
                  frames=65,
                  threshold=0.4,
                  interval=2,
