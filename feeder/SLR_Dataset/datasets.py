@@ -8,7 +8,7 @@ import torch.utils.data
 class TotalDataset(torch.utils.data.Dataset):
     def __init__(self,
                  data_split='train',
-                 data_root='/data',
+                 data_root='./data',
                  subset_name=['WLASL'],
                  frames=65,
                  threshold=0.4,

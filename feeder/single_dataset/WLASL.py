@@ -20,7 +20,7 @@ if not os.path.exists(cache_home):
 
 class WLASL(torch.utils.data.Dataset):
     def __init__(self,
-                 data_root='/data/WLASL',
+                 data_root='./data/WLASL',
                  data_split='train',
                  hand_side='right',
                  interval=2,
