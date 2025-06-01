@@ -13,8 +13,10 @@ from PIL import Image
 img_size = np.array([[256.0, 256.0]], dtype=np.float32)
 LEN_KPS = 10
 THRE = 0.8
-cache_home = 'your_path' # you can save pose data into .pkl file
-
+cache_home = './data'
+if not os.path.exists(cache_home):
+    UserWarning(f'There is no "{cache_home}" directory incurrent dir/ Start to Create!')
+    os.makedirs(cache_home)
 
 class WLASL(torch.utils.data.Dataset):
     def __init__(self,
