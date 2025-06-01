@@ -32,7 +32,7 @@ class Feeder_SLR(torch.utils.data.Dataset):
         self.crop_resize = True
         self.l_ratio = l_ratio
 
-        self.ds = datasets.TotalDataset(subset_name=['WLASL'], mask_frames=False)
+        self.ds = datasets.TotalDataset(subset_name=['WLASL'])
         self.temporal_crop = augmentations.TemporalRandomCrop(size=input_size, interval=2)
         print('sample length is ', self.__len__())
         print("l_ratio", self.l_ratio)

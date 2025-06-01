@@ -41,8 +41,8 @@ class Feeder_SLR(torch.utils.data.Dataset):
         assert len(subset_name) is not None
         assert num_class is not None
 
-        self.ds = datasets.TotalDataset(subset_name=subset_name, mask_frames=False, data_split=data_split,
-                                        wlasl_class_num=num_class if 'WLASL' in subset_name else 2000,
+        self.ds = datasets.TotalDataset(subset_name=subset_name, data_split=data_split,
+                                        wlasl_class_num=num_class if 'WLASL' in subset_name else 100,
                                         msasl_class_num=num_class if 'MS_ASL' in subset_name else 1000)
         self.N = self.ds.len()
         if data_ratio is not None:
