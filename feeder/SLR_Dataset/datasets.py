@@ -15,7 +15,7 @@ class TotalDataset(torch.utils.data.Dataset):
                  interval=2,
                  hand_side='right',
                  msasl_class_num=1000,
-                 wlasl_class_num=2000,
+                 wlasl_class_num=100,
                  ds_ratio=1.0
                  ):
         self.data_split = data_split
