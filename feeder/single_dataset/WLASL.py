@@ -25,7 +25,7 @@ class WLASL(torch.utils.data.Dataset):
                  threshold=0.5,
                  max_frames=150,
                  joints=21,
-                 subset_num=2000,
+                 subset_num=100,
                  use_cache=True,
                  ):
         '''
