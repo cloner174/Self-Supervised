@@ -2,7 +2,7 @@
 export OMP_NUM_THREADS=1
 export CUDA_VISIBLE_DEVICES=0
 
-python -m torch.distributed.launch --nproc_per_node=1 --master_port 11903 pretrain.py \
+!torchrun --nproc_per_node=1 --master_port 11903 pretrain.py \
 --workers 2 \
 --lr 0.01 \
 --batch-size 32 \
