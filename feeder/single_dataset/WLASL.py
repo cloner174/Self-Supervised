@@ -176,24 +176,37 @@ class WLASL(torch.utils.data.Dataset):
             mask = copy.deepcopy(confidence)
             mask = np.where(mask > self.threshold, 1.0, 0.0)
             trans = np.array([[bbxes[i][0], bbxes[i][2]]], dtype=np.float32)
-            scale = np.array(
-                [[bbxes[i][1] - bbxes[i][0], bbxes[i][3] - bbxes[i][2]]],
-                dtype=np.float32)
-            assert scale[0, 1] > 0.0 and scale[0, 0] > 0.0
-            kp2ds = (kp2ds - trans) / scale * img_size
-            kp2ds = np.where(kp2ds > 0.0, kp2ds, 0.0)
-            if self.hand_side == 'left':
-                kp2ds[:, 0] = img_size[0, 0] - kp2ds[:, 0]
-                kp2ds = np.where(kp2ds < 255.0, kp2ds, 0.0)
-            gt = copy.deepcopy(kp2ds)
-
-
-            kp2ds = kp2ds / img_size
+            # Calculate width and height from the bounding box
+            width = bbxes[i][1] - bbxes[i][0]
+            height = bbxes[i][3] - bbxes[i][2]
+            
+            if width <= 0.0 or height <= 0.0:
+                print(f"Warning: Invalid bounding box dimensions (width={width}, height={height}) for frame {frame_list_update[i]} at index {index}. Filling with zero keypoints.")
+                # Assign zero data for this problematic frame
+                kp2ds = np.zeros((self.joints, 2), dtype=np.float32) # self.joints is 21
+                confidence = np.zeros((self.joints, 2), dtype=np.float32)
+                mask = np.zeros((self.joints, 2), dtype=np.float32)
+                gt = np.zeros((self.joints, 2), dtype=np.float32)
+            else:
+                # Proceed with normal processing if dimensions are valid
+                scale = np.array([[width, height]], dtype=np.float32)
+                kp2ds, confidence = self.get_kp2ds(skeleton, confidences, self.threshold, part=self.hand_side)
+                mask = copy.deepcopy(confidence)
+                mask = np.where(mask > self.threshold, 1.0, 0.0)
+                
+                kp2ds = (kp2ds - trans) / scale * img_size
+                kp2ds = np.where(kp2ds > 0.0, kp2ds, 0.0)
+                if self.hand_side == 'left':
+                    kp2ds[:, 0] = img_size[0, 0] - kp2ds[:, 0]
+                    kp2ds = np.where(kp2ds < 255.0, kp2ds, 0.0)
+                gt = copy.deepcopy(kp2ds)
+            
+            # Append the processed (or zeroed) data to the lists
             kp2ds_total.append(kp2ds[np.newaxis, :, :])
             conf.append(confidence[np.newaxis, :, :])
             gts.append(gt[np.newaxis, :, :])
             masks.append(mask[np.newaxis, :, :])
-
+        
         # existing condition that only last several frames don;t exist
         if len(total_frame_list) != len(frame_list_update):
                 length = len(total_frame_list) - len(frame_list_update)
