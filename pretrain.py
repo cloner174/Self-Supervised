@@ -21,6 +21,11 @@ import moco.builder_dist
 from torch.utils.tensorboard import SummaryWriter
 from dataset import get_pretraining_set
 
+def worker_init_fn(worker_id):
+    worker_seed = torch.initial_seed() % 2 ** 32
+    np.random.seed(worker_seed)
+    random.seed(worker_seed)
+
 parser = argparse.ArgumentParser(description='PyTorch ImageNet Training')
 parser.add_argument('-j', '--workers', default=32, type=int, metavar='N',
                     help='number of data loading workers (default: 32)')
@@ -161,10 +166,6 @@ def main():
     else:
         train_sampler = None
 
-    def worker_init_fn(worker_id):
-        worker_seed = torch.initial_seed() % 2 ** 32
-        np.random.seed(worker_seed)
-        random.seed(worker_seed)
 
     train_loader = torch.utils.data.DataLoader(
         train_dataset, batch_size=args.batch_size, shuffle=(train_sampler is None), num_workers=args.workers,
