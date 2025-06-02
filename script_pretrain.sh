@@ -1,3 +1,5 @@
+export TF_ENABLE_ONEDNN_OPTS=0
+
 python pretrain.py \
 --workers 16 \
 --lr 0.01 \
