@@ -1,2 +1,4 @@
 Archive/
 data/
+__pycache__/
+save_ckpt_pretrain/
