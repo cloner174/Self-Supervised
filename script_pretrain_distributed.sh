@@ -1,4 +1,7 @@
-python pretrain.py \
+export OMP_NUM_THREADS=1
+export CUDA_VISIBLE_DEVICES=0
+
+torchrun --nproc_per_node=1 --master_port 11903 pretrain.py \
 --workers 16 \
 --lr 0.01 \
 --batch-size 16 \
@@ -13,5 +16,4 @@ python pretrain.py \
 --epochs 150 \
 --pre-dataset SLR \
 --skeleton-representation graph-based \
---inter-dist \
---device cuda
+--inter-dist

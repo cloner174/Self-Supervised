@@ -95,9 +95,11 @@ parser.add_argument('--inter-dist', action='store_true',
 def main():
     args = parser.parse_args()
     misc.init_distributed_mode(args)
-
-    device = torch.device(args.device)
-
+    if args.distributed:
+        device = torch.device(args.device, args.gpu)
+    else:
+        device = torch.device(args.device)
+    print(f"Using device: {device}")
     # fix the seed for reproducibility
     seed = args.seed + misc.get_rank()
     torch.manual_seed(seed)
@@ -129,7 +131,7 @@ def main():
         print('Distributed data parallel model used')
 
     # define loss function (criterion) and optimizer
-    criterion = nn.CrossEntropyLoss().cuda(args.gpu)
+    criterion = nn.CrossEntropyLoss().to(device)
 
     optimizer = torch.optim.SGD(model.parameters(), args.lr,
                                 momentum=args.momentum,
@@ -151,10 +153,9 @@ def main():
 
     ## Data loading code
     train_dataset = get_pretraining_set(opts)
-
+    global_rank = misc.get_rank()
     if args.distributed:
         num_tasks = misc.get_world_size()
-        global_rank = misc.get_rank()
         train_sampler = torch.utils.data.distributed.DistributedSampler(
             train_dataset, num_replicas=num_tasks, rank=global_rank, shuffle=True)
     else:
@@ -181,7 +182,7 @@ def main():
         adjust_learning_rate(optimizer, epoch, args)
 
         # train for one epoch
-        loss_joint, loss_motion, loss_sim, loss_inter, top1_joint, top1_motion = train(train_loader, model, criterion, optimizer, epoch, args)
+        loss_joint, loss_motion, loss_sim, loss_inter, top1_joint, top1_motion = train(train_loader, model, criterion, optimizer, epoch, args, device)
 
         if global_rank == 0:
             writer.add_scalar('loss_joint', loss_joint.avg, global_step=epoch)
@@ -199,7 +200,7 @@ def main():
                 }, is_best=False, filename=args.checkpoint_path + '/checkpoint_{:04d}.pth.tar'.format(epoch))
 
 
-def train(train_loader, model, criterion, optimizer, epoch, args):
+def train(train_loader, model, criterion, optimizer, epoch, args, device):
     batch_time = AverageMeter('Time', ':6.3f')
     data_time = AverageMeter('Data', ':6.3f')
     losses = AverageMeter('Loss', ':6.3f')
@@ -226,9 +227,9 @@ def train(train_loader, model, criterion, optimizer, epoch, args):
         # measure data loading time
         data_time.update(time.time() - end)
         for k, v in input_v1.items():
-            input_v1[k] = v.float().cuda(non_blocking=True)
+            input_v1[k] = v.float().to(device, non_blocking=True)
         for k, v in input_v2.items():
-            input_v2[k] = v.float().cuda(non_blocking=True)
+            input_v2[k] = v.float().to(device, non_blocking=True)
 
 
         # compute output
