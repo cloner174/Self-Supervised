@@ -89,35 +89,41 @@ def print_config(opt, save_path):
         f.close()
 
 
-def load_pretrained(model, pretrained):
-    if os.path.isfile(pretrained):
-        print("=> loading checkpoint '{}'".format(pretrained))
-        checkpoint = torch.load(pretrained, map_location="cpu")
-
-        # rename moco pre-trained keys
-        state_dict = checkpoint['state_dict']
-        from collections import OrderedDict
-        new_state_dict = OrderedDict()
-        for k, v in state_dict.items():
-            name = k[7:]  # remove `module.`
-            new_state_dict[name] = v
-        for k in list(new_state_dict.keys()):
-            # retain only encoder_q up to before the embedding layer
-            if not k.startswith('encoder_q'):
-                del new_state_dict[k]
-            elif '.proj.fc' in k:
-                del new_state_dict[k]
-            else:
-                pass
-
-        msg = model.load_state_dict(new_state_dict, strict=False)
-        print("message",msg)
-        assert set(msg.missing_keys) == {"encoder_q.proj.fc.weight", "encoder_q.proj.fc.bias",
-                                         "encoder_q_motion.proj.fc.weight", "encoder_q_motion.proj.fc.bias",}
-
-        print("=> loaded pre-trained model '{}'".format(pretrained))
+def load_pretrained(model, pretrained_path):
+    from collections import OrderedDict
+    if os.path.isfile(pretrained_path):
+        print("=> loading checkpoint '{}'".format(pretrained_path))
+        checkpoint = torch.load(pretrained_path, map_location="cpu")
+        original_checkpoint_state_dict = checkpoint['state_dict']
+        
+        state_dict_to_load_into_model = OrderedDict()
+        for k, v in original_checkpoint_state_dict.items():
+            name = k
+            # remove 'module.' prefix if checkpoint was from DDP model
+            if name.startswith('module.'): 
+                name = name[7:]
+            # load weights for encoder_q and encoder_q_motion
+            if name.startswith('encoder_q.') or name.startswith('encoder_q_motion.'):
+                # Exclude the final FC layer of their respective projection heads
+                if '.proj.fc.' in name: # Catches 'encoder_q.proj.fc.weight', 'encoder_q_motion.proj.fc.bias', etc.
+                    continue
+                else:
+                    state_dict_to_load_into_model[name] = v
+            # ('queue', 'queue_ptr', 'encoder_k.*') are ignored.
+        
+        # strict=False allows for 1. Layers in 'new model' not in 'loaded state dict' 2. Unexpected keys:( if pretrain had hand_fc but downstream doesn't).
+        msg = model.load_state_dict(state_dict_to_load_into_model, strict=False)
+        
+        print("State_dict loading message:", msg)
+        expected_missing_keys = {
+            "encoder_q.proj.fc.weight", "encoder_q.proj.fc.bias",
+            "encoder_q_motion.proj.fc.weight", "encoder_q_motion.proj.fc.bias"
+        }
+        assert set(msg.missing_keys) == expected_missing_keys, \
+            f"Missing keys mismatch.\nExpected only: {expected_missing_keys}\nGot missing: {set(msg.missing_keys)}\nUnexpected keys in loaded dict (ignored): {set(msg.unexpected_keys)}"
+        print("=> loaded pre-trained model '{}' successfully (after filtering)".format(pretrained_path))
     else:
-        print("=> no checkpoint found at '{}'".format(pretrained))
+        print("=> no checkpoint found at '{}'".format(pretrained_path))
 
 
 def main():
