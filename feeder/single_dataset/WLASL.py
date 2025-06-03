@@ -181,7 +181,7 @@ class WLASL(torch.utils.data.Dataset):
             height = bbxes[i][3] - bbxes[i][2]
             
             if width <= 0.0 or height <= 0.0:
-                print(f"Warning: Invalid bounding box dimensions (width={width}, height={height}) for frame {frame_list_update[i]} at index {index} with name {video_name}. Filling with zero instead.")
+                #print(f"Warning: Invalid bounding box dimensions (width={width}, height={height}) for frame {frame_list_update[i]} at index {index} with name {video_name}. Filling with zero instead.")
                 # Assign zero data for this problematic frame
                 kp2ds = np.zeros((self.joints, 2), dtype=np.float32) # self.joints is 21
                 confidence = np.zeros((self.joints, 2), dtype=np.float32)
