@@ -2,3 +2,4 @@ Archive/
 data/
 __pycache__/
 save_ckpt_pretrain/
+save_ckpt_downstream/
