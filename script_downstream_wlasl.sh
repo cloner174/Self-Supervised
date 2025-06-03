@@ -15,5 +15,4 @@ CUDA_VISIBLE_DEVICES=0 python downstream_classification.py \
   --input_size 64 \
   --eval_step 1 \
   --view all \
-  --save-ckpt \
-  --inter-dist
+  --save-ckpt
