@@ -70,7 +70,8 @@ class MoCo(nn.Module):
                                                     self.encoder_q.proj.fc)
                 self.encoder_k.proj.fc = nn.Sequential(nn.Linear(dim_mlp, dim_mlp),
                                                     nn.ReLU(),
-                                                    self.encoder_k.proj.fc)
+                                                    self.encoder_k.proj.fc) #  self.encoder_k.proj.fc  -> torch.nn.Linear(in_channels, num_class)
+                
                 self.encoder_q_motion.proj.fc = nn.Sequential(nn.Linear(dim_mlp, dim_mlp),
                                                             nn.ReLU(),
                                                             self.encoder_q_motion.proj.fc)
@@ -112,9 +113,9 @@ class MoCo(nn.Module):
                 param_k.requires_grad = False
 
             # create the queue
-            self.register_buffer("queue", torch.randn(dim, self.K))
+            self.register_buffer("queue", torch.randn(dim, self.K)) # dim -> features # K -> Line Length ( How many Negative samples should be kept )
             self.queue = F.normalize(self.queue, dim=0)
-            self.register_buffer("queue_ptr", torch.zeros(1, dtype=torch.long))
+            self.register_buffer("queue_ptr", torch.zeros(1, dtype=torch.long)) # ptr -> (Pointer) -> Index keeper!
 
             self.register_buffer("queue_motion", torch.randn(dim, self.K))
             self.queue_motion = F.normalize(self.queue_motion, dim=0)
