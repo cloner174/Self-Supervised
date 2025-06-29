@@ -234,17 +234,33 @@ def train(train_loader, model, criterion, optimizer, epoch, args, device):
 
 
         # compute output
-        output, output_motion, target, loss_sim, logits_hand, logits_body, logits_hand_motion, logits_body_motion, loss_inter_dist = model(input_v1, input_v2, self_dist=args.inter_dist)
+        output, output_motion, target, loss_sim, logits_hand, logits_body, logits_hand_motion, logits_body_motion, loss_inter_dist, w_joint, w_motion = model(input_v1, input_v2, self_dist=args.inter_dist)
 
         batch_size = output.size(0)
 
         # compute loss
         loss_joint = criterion(output, target)
         loss_motion = criterion(output_motion, target)
-        loss_hand, loss_body, loss_hand_motion, loss_body_motion = criterion(logits_hand, target),criterion(logits_body, target),criterion(logits_hand_motion, target),criterion(logits_body_motion, target)
+        
+        # Initialize component losses to 0.0, they will be updated if self_dist is True
+        loss_hand = loss_body = loss_hand_motion = loss_body_motion = torch.tensor(0.0).to(device)
+        
+        if args.inter_dist:
+            loss_hand = criterion(logits_hand, target)
+            loss_body = criterion(logits_body, target)
+            loss_hand_motion = criterion(logits_hand_motion, target)
+            loss_body_motion = criterion(logits_body_motion, target)
 
-        loss = loss_joint + loss_motion + loss_sim + loss_hand + loss_body + loss_hand_motion + loss_body_motion + loss_inter_dist
+        # Group losses by their respective streams
+        loss_j_stream = loss_joint + loss_hand + loss_body
+        loss_m_stream = loss_motion + loss_hand_motion + loss_body_motion
 
+        # Calculate the final loss using dynamic weights.
+        # Cross-modal losses (loss_sim, loss_inter_dist) are added afterwards.
+        loss = (w_joint.mean() * loss_j_stream) + \
+               (w_motion.mean() * loss_m_stream) + \
+               loss_sim + loss_inter_dist
+        
         losses.update(loss.item(), batch_size)
         losses_joint.update(loss_joint.item(), batch_size)
         losses_motion.update(loss_motion.item(), batch_size)
