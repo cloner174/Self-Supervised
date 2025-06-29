@@ -103,7 +103,7 @@ def load_pretrained(model, pretrained_path):
             if name.startswith('module.'): 
                 name = name[7:]
             # load weights for encoder_q and encoder_q_motion
-            if name.startswith('encoder_q.') or name.startswith('encoder_q_motion.'):
+            if name.startswith('encoder_q.') or name.startswith('encoder_q_motion.') or name.startswith('dynamic_weighter.'):
                 # Exclude the final FC layer of their respective projection heads
                 if '.proj.fc.' in name: # Catches 'encoder_q.proj.fc.weight', 'encoder_q_motion.proj.fc.bias', etc.
                     continue
