@@ -117,7 +117,9 @@ def load_pretrained(model, pretrained_path):
         print("State_dict loading message:", msg)
         expected_missing_keys = {
             "encoder_q.proj.fc.weight", "encoder_q.proj.fc.bias",
-            "encoder_q_motion.proj.fc.weight", "encoder_q_motion.proj.fc.bias"
+            "encoder_q_motion.proj.fc.weight", "encoder_q_motion.proj.fc.bias",
+            "joint_proj.weight", "joint_proj.bias",
+            "motion_proj.weight", "motion_proj.bias"
         }
         assert set(msg.missing_keys) == expected_missing_keys, \
             f"Missing keys mismatch.\nExpected only: {expected_missing_keys}\nGot missing: {set(msg.missing_keys)}\nUnexpected keys in loaded dict (ignored): {set(msg.unexpected_keys)}"
