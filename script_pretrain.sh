@@ -10,7 +10,7 @@ python pretrain.py \
 --mlp \
 --contrast-t 0.07 \
 --contrast-k 16384 \
---checkpoint-path save_ckpt_pretrain \
+--checkpoint-path save_ckpt_pretrain_implanted \
 --schedule 100 \
 --epochs 150 \
 --pre-dataset SLR \
