@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from .GCN_Transformer import  moco_model_with_transfer, Config
+from .dynamic_weight import DynamicWeighter
+
 
 def loss_kld(inputs, targets):
     inputs = F.log_softmax(inputs, dim=1)
@@ -136,7 +138,7 @@ class MoCo(nn.Module):
                 self.register_buffer("queue_body_motion", torch.randn(dim, self.K_part))
                 self.queue_body_motion = F.normalize(self.queue_body_motion, dim=0)
                 self.register_buffer("queue_ptr_body_motion", torch.zeros(1, dtype=torch.long))
-
+        self.dynamic_weighter = DynamicWeighter(dim=dim)
 
     @torch.no_grad()
     def _momentum_update_key_encoder(self):
@@ -219,8 +221,11 @@ class MoCo(nn.Module):
                 elif view == 'motion':
                     return self.encoder_q_motion(im_q_motion, knn_eval)[0]
                 elif view == 'all':
-                    return (self.encoder_q(im_q, knn_eval)[0] + \
-                            self.encoder_q_motion(im_q_motion, knn_eval)[0]) / 2.
+                    f_joint = self.encoder_q(im_q, knn_eval)[0]
+                    f_motion = self.encoder_q_motion(im_q_motion, knn_eval)[0]
+                    w_joint, w_motion = self.dynamic_weighter(f_joint, f_motion)
+                    # Use the dynamic weights for a weighted sum of features
+                    return w_joint * f_joint + w_motion * f_motion
                 else:
                     raise ValueError
             else:
@@ -258,6 +263,7 @@ class MoCo(nn.Module):
             q_motion_hand = F.normalize(q_motion_hand, dim=1)
             q_motion_body = F.normalize(q_motion_body, dim=1)
 
+        
         # compute key features for  s1 and  s2  skeleton representations 
         with torch.no_grad():  # no gradient to keys
             self._momentum_update_key_encoder()  # update the key encoder
@@ -274,6 +280,8 @@ class MoCo(nn.Module):
             if self_dist is True:
                 k_motion_hand = F.normalize(k_motion_hand, dim=1)
                 k_motion_body = F.normalize(k_motion_body, dim=1)
+        
+        w_joint, w_motion = self.dynamic_weighter(q, q_motion)
 
         # MOCO
         # compute logits
@@ -366,4 +374,4 @@ class MoCo(nn.Module):
             self._dequeue_and_enqueue_body(k_body)
             self._dequeue_and_enqueue_body_motion(k_motion_body)
 
-        return logits, logits_motion, labels, loss_kt * self.kt_weight, logits_hand, logits_body, logits_hand_motion, logits_body_motion, loss_inter_dist
+        return logits, logits_motion, labels, loss_kt * self.kt_weight, logits_hand, logits_body, logits_hand_motion, logits_body_motion, loss_inter_dist, w_joint, w_motion
