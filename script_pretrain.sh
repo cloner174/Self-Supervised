@@ -12,7 +12,7 @@ python pretrain.py \
 --contrast-k 16384 \
 --checkpoint-path save_ckpt_pretrain_implanted \
 --schedule 100 \
---epochs 150 \
+--epochs 151 \
 --pre-dataset SLR \
 --skeleton-representation graph-based \
 --inter-dist \
