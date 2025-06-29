@@ -34,7 +34,9 @@ class MoCo(nn.Module):
         self.encoder_q_motion = moco_model_with_transfer(cfg)
         init_para_GCN_Trans(self.encoder_q)
         init_para_GCN_Trans(self.encoder_q_motion)
-        self.dynamic_weighter = DynamicWeighter(dim=cfg.dim)
+        self.joint_proj = nn.Linear(num_class, dim)
+        self.motion_proj = nn.Linear(num_class, dim)
+        self.dynamic_weighter = DynamicWeighter(dim=dim)
 
 
 
@@ -55,13 +57,17 @@ class MoCo(nn.Module):
                 elif view == 'motion':
                     return self.encoder_q_motion(im_q_motion, knn_eval)[0]
                 elif view == 'all':
-                    f_joint = self.encoder_q(im_q, knn_eval)[0]
-                    f_motion = self.encoder_q_motion(im_q_motion, knn_eval)[0]
+                    # (dimension: num_class)
+                    f_joint_logits = self.encoder_q(im_q, knn_eval)[0]
+                    f_motion_logits = self.encoder_q_motion(im_q_motion, knn_eval)[0]
                     
-                    # Compute dynamic weights based on the features of the current sample
-                    w_joint, w_motion = self.dynamic_weighter(f_joint, f_motion)
+                    # Project them back (dimension: dim)
+                    f_joint_proj = self.joint_proj(f_joint_logits)
+                    f_motion_proj = self.motion_proj(f_motion_logits)
                     
-                    # Return the dynamically weighted sum of features
-                    return w_joint * f_joint + w_motion * f_motion
+                    # Compute dynamic weights using the projected features
+                    w_joint, w_motion = self.dynamic_weighter(f_joint_proj, f_motion_proj)
+                    
+                    return w_joint * f_joint_logits + w_motion * f_motion_logits
                 else:
                     raise ValueError
