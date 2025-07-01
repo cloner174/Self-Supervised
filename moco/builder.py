@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from .GCN_Transformer import  moco_model_with_transfer, Config
+from .dynamic_weighter import DynamicWeighter
 
 def loss_kld(inputs, targets):
     inputs = F.log_softmax(inputs, dim=1)
@@ -33,6 +34,7 @@ class MoCo(nn.Module):
         self.encoder_q_motion = moco_model_with_transfer(cfg)
         init_para_GCN_Trans(self.encoder_q)
         init_para_GCN_Trans(self.encoder_q_motion)
+        self.dynamic_weighter = DynamicWeighter(dim=num_class, hidden_dim=64)
 
 
 
@@ -52,8 +54,17 @@ class MoCo(nn.Module):
                     return self.encoder_q(im_q, knn_eval)[0]
                 elif view == 'motion':
                     return self.encoder_q_motion(im_q_motion, knn_eval)[0]
+                
                 elif view == 'all':
-                    return (self.encoder_q(im_q, knn_eval)[0] + \
-                            self.encoder_q_motion(im_q_motion, knn_eval)[0]) / 2.
+                    
+                    f_joint = self.encoder_q(im_q, knn_eval)[0]
+                    f_motion = self.encoder_q_motion(im_q_motion, knn_eval)[0]
+                    
+                    #get weigths
+                    w_joint, w_motion = self.dynamic_weighter(f_joint, f_motion)
+                    
+                    # dynamically weighted sum of features
+                    return w_joint * f_joint + w_motion * f_motion
+                
                 else:
                     raise ValueError
