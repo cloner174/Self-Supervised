@@ -76,6 +76,9 @@ parser.add_argument('--inter-dist', action='store_true',
                     help='use inter distillation loss')
 parser.add_argument('--save-ckpt', action='store_false', help='if you need to cancel save checkpoint')
 parser.add_argument('--protocol', type=str, default='finetune', help='finetune|semi')
+
+parser.add_argument('--use_dynamic_weighter', action='store_true', help='Using Dynamic Weighter for MoCo in FineTune')
+
 best_acc1 = 0
 
 
@@ -184,7 +187,7 @@ def main_worker(gpu, ngpus_per_node, args):
     # create model
     print("=> creating model")
 
-    model = moco.builder.MoCo(args.finetune_skeleton_representation, opts.num_class, pretrain=False , dropout=args.dropout)
+    model = moco.builder.MoCo(args.finetune_skeleton_representation, opts.num_class, pretrain=False , dropout=args.dropout, use_dynamic_weighter=args.use_dynamic_weighter)
     print("options", opts.num_class, opts.train_feeder_args, opts.test_feeder_args)
 
     if args.pretrained:
