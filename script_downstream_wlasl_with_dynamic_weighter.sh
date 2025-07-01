@@ -2,6 +2,7 @@ export TF_ENABLE_ONEDNN_OPTS=0
 
 CUDA_VISIBLE_DEVICES=0 python downstream_classification.py \
   --lr 0.01 \
+  --workers 16 \
   --batch-size 32 \
   --pretrained 'save_ckpt_pretrain\checkpoint_0150.pth.tar' \
   --finetune-dataset SLR \
