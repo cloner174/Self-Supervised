@@ -19,7 +19,7 @@ def init_para_GCN_Trans(model):
 class MoCo(nn.Module):
     def __init__(self, skeleton_representation, num_class, dim=128, K=65536, m=0.999, T=0.07,
                  teacher_T=0.05, student_T=0.1, cmd_weight=1.0, topk=1024, mlp=False, pretrain=True, dropout=None,
-                 inter_weight=0.5, inter_dist=False, topk_part=1024, K_part=8192):
+                 inter_weight=0.5, inter_dist=False, topk_part=1024, K_part=8192, use_dynamic_weighter = False):
         super(MoCo, self).__init__()
         self.pretrain = pretrain
         RHand_Bone = [(2, 1), (3, 2), (4, 3), (5, 4), (6, 1), (7, 6), (8, 7), (9, 8), (10, 1),
@@ -34,7 +34,10 @@ class MoCo(nn.Module):
         self.encoder_q_motion = moco_model_with_transfer(cfg)
         init_para_GCN_Trans(self.encoder_q)
         init_para_GCN_Trans(self.encoder_q_motion)
-        self.dynamic_weighter = DynamicWeighter(dim=num_class, hidden_dim=64)
+        
+        self.use_dynamic_weighter = use_dynamic_weighter
+        if use_dynamic_weighter:
+            self.dynamic_weighter = DynamicWeighter(dim=num_class, hidden_dim=64)
 
 
 
@@ -54,17 +57,20 @@ class MoCo(nn.Module):
                     return self.encoder_q(im_q, knn_eval)[0]
                 elif view == 'motion':
                     return self.encoder_q_motion(im_q_motion, knn_eval)[0]
-                
                 elif view == 'all':
                     
-                    f_joint = self.encoder_q(im_q, knn_eval)[0]
-                    f_motion = self.encoder_q_motion(im_q_motion, knn_eval)[0]
+                    if self.use_dynamic_weighter:
+                        f_joint = self.encoder_q(im_q, knn_eval)[0]
+                        f_motion = self.encoder_q_motion(im_q_motion, knn_eval)[0]
+                        
+                        #get weigths
+                        w_joint, w_motion = self.dynamic_weighter(f_joint, f_motion)
+                        
+                        # dynamically weighted sum of features
+                        return w_joint * f_joint + w_motion * f_motion
                     
-                    #get weigths
-                    w_joint, w_motion = self.dynamic_weighter(f_joint, f_motion)
-                    
-                    # dynamically weighted sum of features
-                    return w_joint * f_joint + w_motion * f_motion
-                
+                    else:
+                        return (self.encoder_q(im_q, knn_eval)[0] + \
+                                self.encoder_q_motion(im_q_motion, knn_eval)[0]) / 2.
                 else:
                     raise ValueError
