@@ -37,7 +37,8 @@ class MoCo(nn.Module):
         
         self.use_dynamic_weighter = use_dynamic_weighter
         if use_dynamic_weighter:
-            self.dynamic_weighter = DynamicWeighter(dim=num_class, hidden_dim=64)
+            self.dynamic_weighter = DynamicWeighter(dim=num_class, hidden_dim=128)
+            print('Using Implanted: "Dynamic Weighter"')
 
 
 
