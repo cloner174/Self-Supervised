@@ -17,4 +17,5 @@ CUDA_VISIBLE_DEVICES=0 python downstream_classification.py \
   --eval_step 1 \
   --view all \
   --save-ckpt \
+  --epochs 28 \
   --use_dynamic_weighter
